@@ -1,4 +1,4 @@
-setwd("~/Documents/R/animint")
+setwd("~/R/AnimintTest")
 
 library(cdcfluview)
 # retrieve state-level data from the CDC's FluView Portal
@@ -67,17 +67,27 @@ USpolygons <- subset(state[, c("long", "lat", "group", "order", "STATE_NAME")],
                      !STATE_NAME %in% c("Alaska", "Hawaii", "District of Columbia"))
 names(USpolygons)[5] <- "STATENAME"
 
+USdots <-
+  ddply(USpolygons, .(STATENAME), summarise,
+        mean.lat=mean(lat), mean.long=mean(long))
+
 # add state flu
 map_flu <- ldply(unique(state_flu$WEEKEND), function(we) {
   df <- subset(state_flu, WEEKEND == we)
-  df <- merge(USpolygons, df)
+  ##merge(USpolygons, df)
+  merge(USdots, df)
 })
 
 state.map <- ggplot() + 
   make_text(map_flu, -100, 50, "WEEKEND", "CDC FluView in Lower 48 States ending %s") + 
-  geom_polygon(data = map_flu, aes(x = long, y = lat, group = group, fill = level, 
-                                  showSelected = WEEKEND, clickSelects = STATENAME), 
-                colour = "black", size = 1) + 
+  ## geom_polygon(data = map_flu, aes(x = long, y = lat, group = group, fill = level, 
+  ##                                 showSelected = WEEKEND, clickSelects = STATENAME), 
+  ##               colour = "black", size = 1) +
+  geom_point(aes(mean.long, mean.lat, fill=level, showSelected=WEEKEND,
+                 clickSelects=STATENAME),
+             size=10,
+             color="black",
+             data=map_flu)+
   scale_fill_gradient2(low = "white", high = "red", breaks = 0:10, guide = "none") + 
   theme_opts + 
   theme_animint(width = 750, height= 500)
